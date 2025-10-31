@@ -7,10 +7,22 @@ import Avatar from "@/components/atoms/Avatar"
 import Button from "@/components/atoms/Button"
 
 const PostCard = ({ post, onLike, onComment, className }) => {
-  const [isLiked, setIsLiked] = useState(post.likes.includes("1")) // Current user ID is "1"
+// Parse likes from string to array (likes_c is MultilineText in database)
+  const parsedLikes = (() => {
+    if (!post.likes) return [];
+    if (Array.isArray(post.likes)) return post.likes;
+    try {
+      // Try parsing as JSON array
+      return JSON.parse(post.likes);
+    } catch {
+      // Fallback to comma-separated string
+      return post.likes.split(',').map(id => id.trim()).filter(Boolean);
+    }
+  })();
+  const [isLiked, setIsLiked] = useState(parsedLikes.includes("1")) // Current user ID is "1"
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
-  const [likesCount, setLikesCount] = useState(post.likes.length)
+const [likesCount, setLikesCount] = useState(parsedLikes.length)
 
   const handleLike = async () => {
     try {
