@@ -25,17 +25,55 @@ export const postService = {
         return []
       }
 
-      return (response.data || []).map(post => ({
-        ...post,
-        author: post.author_id_c ? {
-          Id: post.author_id_c.Id,
-          username_c: post.author_id_c.username_c,
-          profile_picture_c: post.author_id_c.profile_picture_c,
-          bio_c: post.author_id_c.bio_c
-        } : null,
-        likes: post.likes_c ? JSON.parse(post.likes_c) : [],
-        reactions: post.reactions_c ? JSON.parse(post.reactions_c) : {}
-      }))
+return (response.data || []).map(post => {
+        // Safe parsing for likes_c - handles multiple formats
+        let likes = [];
+        if (post.likes_c) {
+          try {
+            if (Array.isArray(post.likes_c)) {
+              likes = post.likes_c;
+            } else if (typeof post.likes_c === 'string') {
+              // Try parsing as JSON first
+              try {
+                likes = JSON.parse(post.likes_c);
+              } catch {
+                // If not JSON, might be comma-separated string
+                likes = post.likes_c.split(',').filter(id => id.trim());
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to parse likes for post ${post.Id}:`, error);
+            likes = [];
+          }
+        }
+
+        // Safe parsing for reactions_c
+        let reactions = {};
+        if (post.reactions_c) {
+          try {
+            if (typeof post.reactions_c === 'object' && !Array.isArray(post.reactions_c)) {
+              reactions = post.reactions_c;
+            } else if (typeof post.reactions_c === 'string') {
+              reactions = JSON.parse(post.reactions_c);
+            }
+          } catch (error) {
+            console.warn(`Failed to parse reactions for post ${post.Id}:`, error);
+            reactions = {};
+          }
+        }
+
+        return {
+          ...post,
+          author: post.author_id_c ? {
+            Id: post.author_id_c.Id,
+            username_c: post.author_id_c.username_c,
+            profile_picture_c: post.author_id_c.profile_picture_c,
+            bio_c: post.author_id_c.bio_c
+          } : null,
+          likes,
+          reactions
+        };
+      })
     } catch (error) {
       console.error("Error fetching posts:", error?.response?.data?.message || error)
       return []
@@ -65,7 +103,42 @@ export const postService = {
         throw new Error("Post not found")
       }
 
-      const post = response.data
+const post = response.data
+      
+      // Safe parsing for likes_c - handles multiple formats
+      let likes = [];
+      if (post.likes_c) {
+        try {
+          if (Array.isArray(post.likes_c)) {
+            likes = post.likes_c;
+          } else if (typeof post.likes_c === 'string') {
+            try {
+              likes = JSON.parse(post.likes_c);
+            } catch {
+              likes = post.likes_c.split(',').filter(id => id.trim());
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to parse likes for post ${post.Id}:`, error);
+          likes = [];
+        }
+      }
+
+      // Safe parsing for reactions_c
+      let reactions = {};
+      if (post.reactions_c) {
+        try {
+          if (typeof post.reactions_c === 'object' && !Array.isArray(post.reactions_c)) {
+            reactions = post.reactions_c;
+          } else if (typeof post.reactions_c === 'string') {
+            reactions = JSON.parse(post.reactions_c);
+          }
+        } catch (error) {
+          console.warn(`Failed to parse reactions for post ${post.Id}:`, error);
+          reactions = {};
+        }
+      }
+
       return {
         ...post,
         author: post.author_id_c ? {
@@ -74,8 +147,8 @@ export const postService = {
           profile_picture_c: post.author_id_c.profile_picture_c,
           bio_c: post.author_id_c.bio_c
         } : null,
-        likes: post.likes_c ? JSON.parse(post.likes_c) : [],
-        reactions: post.reactions_c ? JSON.parse(post.reactions_c) : {}
+        likes,
+        reactions
       }
     } catch (error) {
       console.error(`Error fetching post ${id}:`, error?.response?.data?.message || error)
@@ -108,17 +181,53 @@ export const postService = {
         return []
       }
 
-      return (response.data || []).map(post => ({
-        ...post,
-        author: post.author_id_c ? {
-          Id: post.author_id_c.Id,
-          username_c: post.author_id_c.username_c,
-          profile_picture_c: post.author_id_c.profile_picture_c,
-          bio_c: post.author_id_c.bio_c
-        } : null,
-        likes: post.likes_c ? JSON.parse(post.likes_c) : [],
-        reactions: post.reactions_c ? JSON.parse(post.reactions_c) : {}
-      }))
+return (response.data || []).map(post => {
+        // Safe parsing for likes_c - handles multiple formats
+        let likes = [];
+        if (post.likes_c) {
+          try {
+            if (Array.isArray(post.likes_c)) {
+              likes = post.likes_c;
+            } else if (typeof post.likes_c === 'string') {
+              try {
+                likes = JSON.parse(post.likes_c);
+              } catch {
+                likes = post.likes_c.split(',').filter(id => id.trim());
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to parse likes for post ${post.Id}:`, error);
+            likes = [];
+          }
+        }
+
+        // Safe parsing for reactions_c
+        let reactions = {};
+        if (post.reactions_c) {
+          try {
+            if (typeof post.reactions_c === 'object' && !Array.isArray(post.reactions_c)) {
+              reactions = post.reactions_c;
+            } else if (typeof post.reactions_c === 'string') {
+              reactions = JSON.parse(post.reactions_c);
+            }
+          } catch (error) {
+            console.warn(`Failed to parse reactions for post ${post.Id}:`, error);
+            reactions = {};
+          }
+        }
+
+        return {
+          ...post,
+          author: post.author_id_c ? {
+            Id: post.author_id_c.Id,
+            username_c: post.author_id_c.username_c,
+            profile_picture_c: post.author_id_c.profile_picture_c,
+            bio_c: post.author_id_c.bio_c
+          } : null,
+          likes,
+          reactions
+        };
+      })
     } catch (error) {
       console.error("Error fetching user posts:", error?.response?.data?.message || error)
       return []
@@ -149,17 +258,53 @@ export const postService = {
         return []
       }
 
-      return (response.data || []).map(post => ({
-        ...post,
-        author: post.author_id_c ? {
-          Id: post.author_id_c.Id,
-          username_c: post.author_id_c.username_c,
-          profile_picture_c: post.author_id_c.profile_picture_c,
-          bio_c: post.author_id_c.bio_c
-        } : null,
-        likes: post.likes_c ? JSON.parse(post.likes_c) : [],
-        reactions: post.reactions_c ? JSON.parse(post.reactions_c) : {}
-      }))
+return (response.data || []).map(post => {
+        // Safe parsing for likes_c - handles multiple formats
+        let likes = [];
+        if (post.likes_c) {
+          try {
+            if (Array.isArray(post.likes_c)) {
+              likes = post.likes_c;
+            } else if (typeof post.likes_c === 'string') {
+              try {
+                likes = JSON.parse(post.likes_c);
+              } catch {
+                likes = post.likes_c.split(',').filter(id => id.trim());
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to parse likes for post ${post.Id}:`, error);
+            likes = [];
+          }
+        }
+
+        // Safe parsing for reactions_c
+        let reactions = {};
+        if (post.reactions_c) {
+          try {
+            if (typeof post.reactions_c === 'object' && !Array.isArray(post.reactions_c)) {
+              reactions = post.reactions_c;
+            } else if (typeof post.reactions_c === 'string') {
+              reactions = JSON.parse(post.reactions_c);
+            }
+          } catch (error) {
+            console.warn(`Failed to parse reactions for post ${post.Id}:`, error);
+            reactions = {};
+          }
+        }
+
+        return {
+          ...post,
+          author: post.author_id_c ? {
+            Id: post.author_id_c.Id,
+            username_c: post.author_id_c.username_c,
+            profile_picture_c: post.author_id_c.profile_picture_c,
+            bio_c: post.author_id_c.bio_c
+          } : null,
+          likes,
+          reactions
+        };
+      })
     } catch (error) {
       console.error("Error fetching feed posts:", error?.response?.data?.message || error)
       return []
