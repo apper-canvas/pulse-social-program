@@ -82,9 +82,18 @@ const [likesCount, setLikesCount] = useState(parsedLikes.length)
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <h3 className="font-semibold text-gray-900">{post.author?.username}</h3>
-              <span className="text-gray-400">•</span>
+<span className="text-gray-400">•</span>
               <span className="text-gray-500 text-sm">
-                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                {(() => {
+                  try {
+                    if (!post.createdAt) return "Just now";
+                    const date = new Date(post.createdAt);
+                    if (isNaN(date.getTime())) return "Just now";
+                    return formatDistanceToNow(date, { addSuffix: true });
+                  } catch {
+                    return "Just now";
+                  }
+                })()}
               </span>
             </div>
             {post.author?.bio && (
