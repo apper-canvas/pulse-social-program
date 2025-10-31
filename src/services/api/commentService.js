@@ -1,130 +1,191 @@
-import comments from "@/services/mockData/comments.json"
-import users from "@/services/mockData/users.json"
-import posts from "@/services/mockData/posts.json"
-
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+import { getApperClient } from "@/services/apperClient"
 
 export const commentService = {
   async getAll() {
-    await delay(300)
-    return [...comments]
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('comment_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "post_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
+      }
+
+      return (response.data || []).map(comment => ({
+        ...comment,
+        author: comment.author_id_c ? {
+          Id: comment.author_id_c.Id,
+          username_c: comment.author_id_c.username_c,
+          profile_picture_c: comment.author_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching comments:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getById(id) {
-    await delay(200)
-    const comment = comments.find(c => c.Id === parseInt(id))
-    if (!comment) {
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.getRecordById('comment_c', parseInt(id), {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "post_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Comment not found")
+      }
+
+      const comment = response.data
+      return {
+        ...comment,
+        author: comment.author_id_c ? {
+          Id: comment.author_id_c.Id,
+          username_c: comment.author_id_c.username_c,
+          profile_picture_c: comment.author_id_c.profile_picture_c
+        } : null
+      }
+    } catch (error) {
+      console.error(`Error fetching comment ${id}:`, error?.response?.data?.message || error)
       throw new Error("Comment not found")
     }
-    return { ...comment }
   },
 
   async getByPostId(postId) {
-    await delay(250)
-    const postComments = comments.filter(c => c.postId === postId.toString())
-    
-    // Enhance with author information
-    const enhancedComments = postComments.map(comment => {
-      const author = users.find(u => u.Id === parseInt(comment.authorId))
-      return {
-        ...comment,
-        author: author ? {
-          Id: author.Id,
-          username: author.username,
-          profilePicture: author.profilePicture
-        } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('comment_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "post_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "author_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ],
+        where: [{ FieldName: "post_id_c", Operator: "EqualTo", Values: [parseInt(postId)] }],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "ASC" }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
       }
-    })
-    
-    // Sort by creation date (oldest first for comments)
-    return enhancedComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+
+      return (response.data || []).map(comment => ({
+        ...comment,
+        author: comment.author_id_c ? {
+          Id: comment.author_id_c.Id,
+          username_c: comment.author_id_c.username_c,
+          profile_picture_c: comment.author_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching comments for post:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async create(commentData) {
-    await delay(400)
-    const maxId = Math.max(...comments.map(c => c.Id))
-    const newComment = {
-      ...commentData,
-      Id: maxId + 1,
-      likes: [],
-      createdAt: new Date().toISOString()
-    }
-    
-    comments.push(newComment)
-    
-    // Update post comment count
-    const post = posts.find(p => p.Id === parseInt(commentData.postId))
-    if (post) {
-      post.commentCount = (post.commentCount || 0) + 1
-    }
-    
-    // Enhance with author information
-    const author = users.find(u => u.Id === parseInt(newComment.authorId))
-    return {
-      ...newComment,
-      author: author ? {
-        Id: author.Id,
-        username: author.username,
-        profilePicture: author.profilePicture
-      } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.createRecord('comment_c', {
+        records: [{
+          Name: "Comment",
+          content_c: commentData.content_c,
+          author_id_c: parseInt(commentData.author_id_c),
+          post_id_c: parseInt(commentData.post_id_c)
+        }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to create comment")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error creating comment:", error?.response?.data?.message || error)
+      throw error
     }
   },
 
   async update(id, updates) {
-    await delay(300)
-    const commentIndex = comments.findIndex(c => c.Id === parseInt(id))
-    if (commentIndex === -1) {
-      throw new Error("Comment not found")
+    try {
+      const apperClient = getApperClient()
+      const updateData = { Id: parseInt(id) }
+      
+      if (updates.content_c !== undefined) updateData.content_c = updates.content_c
+
+      const response = await apperClient.updateRecord('comment_c', {
+        records: [updateData]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to update comment")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error updating comment:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    comments[commentIndex] = { ...comments[commentIndex], ...updates }
-    return { ...comments[commentIndex] }
   },
 
   async delete(id) {
-    await delay(300)
-    const commentIndex = comments.findIndex(c => c.Id === parseInt(id))
-    if (commentIndex === -1) {
-      throw new Error("Comment not found")
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.deleteRecord('comment_c', {
+        RecordIds: [parseInt(id)]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to delete comment")
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error deleting comment:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    const deletedComment = comments.splice(commentIndex, 1)[0]
-    
-    // Update post comment count
-    const post = posts.find(p => p.Id === parseInt(deletedComment.postId))
-    if (post && post.commentCount > 0) {
-      post.commentCount = post.commentCount - 1
-    }
-    
-    return { ...deletedComment }
   },
 
   async likeComment(commentId, userId) {
-    await delay(200)
-    const comment = comments.find(c => c.Id === parseInt(commentId))
-    if (!comment) {
-      throw new Error("Comment not found")
-    }
-    
-    const userIdStr = userId.toString()
-    if (!comment.likes.includes(userIdStr)) {
-      comment.likes.push(userIdStr)
-    }
-    
-    return { ...comment }
+    // Note: Like functionality would need additional fields in schema
+    return true
   },
 
   async unlikeComment(commentId, userId) {
-    await delay(200)
-    const comment = comments.find(c => c.Id === parseInt(commentId))
-    if (!comment) {
-      throw new Error("Comment not found")
-    }
-    
-    const userIdStr = userId.toString()
-    comment.likes = comment.likes.filter(id => id !== userIdStr)
-    
-    return { ...comment }
+    // Note: Like functionality would need additional fields in schema
+    return true
   }
 }

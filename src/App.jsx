@@ -1,11 +1,10 @@
-import { RouterProvider } from "react-router-dom"
+import { Outlet } from "react-router-dom"
 import { ToastContainer } from "react-toastify"
-import { router } from "@/router"
 
 function App() {
   return (
     <>
-      <RouterProvider router={router} />
+      <Outlet />
       <ToastContainer
         position="top-right"
         autoClose={3000}

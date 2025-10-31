@@ -1,153 +1,182 @@
-import users from "@/services/mockData/users.json"
-
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+import { getApperClient } from "@/services/apperClient"
 
 export const userService = {
   async getAll() {
-    await delay(300)
-    return [...users]
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('user_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "username_c" } },
+          { field: { Name: "email_c" } },
+          { field: { Name: "bio_c" } },
+          { field: { Name: "profile_picture_c" } },
+          { field: { Name: "cover_photo_c" } },
+          { field: { Name: "location_c" } },
+          { field: { Name: "friends_count_c" } },
+          { field: { Name: "online_c" } },
+          { field: { Name: "CreatedOn" } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
+      }
+
+      return response.data || []
+    } catch (error) {
+      console.error("Error fetching users:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getById(id) {
-    await delay(200)
-    const user = users.find(u => u.Id === parseInt(id))
-    if (!user) {
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.getRecordById('user_c', parseInt(id), {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "username_c" } },
+          { field: { Name: "email_c" } },
+          { field: { Name: "bio_c" } },
+          { field: { Name: "profile_picture_c" } },
+          { field: { Name: "cover_photo_c" } },
+          { field: { Name: "location_c" } },
+          { field: { Name: "friends_count_c" } },
+          { field: { Name: "online_c" } },
+          { field: { Name: "CreatedOn" } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("User not found")
+      }
+
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error?.response?.data?.message || error)
       throw new Error("User not found")
     }
-    return { ...user }
   },
 
   async create(userData) {
-    await delay(400)
-    const maxId = Math.max(...users.map(u => u.Id))
-    const newUser = {
-      ...userData,
-      Id: maxId + 1,
-      friends: [],
-      pendingRequests: [],
-      friendsCount: 0,
-      online: true,
-      createdAt: new Date().toISOString()
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.createRecord('user_c', {
+        records: [{
+          Name: userData.Name || userData.username_c,
+          username_c: userData.username_c,
+          email_c: userData.email_c,
+          bio_c: userData.bio_c || "",
+          profile_picture_c: userData.profile_picture_c || "",
+          cover_photo_c: userData.cover_photo_c || "",
+          location_c: userData.location_c || "",
+          friends_count_c: 0,
+          online_c: true
+        }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to create user")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error creating user:", error?.response?.data?.message || error)
+      throw error
     }
-    users.push(newUser)
-    return { ...newUser }
   },
 
   async update(id, updates) {
-    await delay(300)
-    const userIndex = users.findIndex(u => u.Id === parseInt(id))
-    if (userIndex === -1) {
-      throw new Error("User not found")
+    try {
+      const apperClient = getApperClient()
+      const updateData = { Id: parseInt(id) }
+      
+      if (updates.username_c !== undefined) updateData.username_c = updates.username_c
+      if (updates.email_c !== undefined) updateData.email_c = updates.email_c
+      if (updates.bio_c !== undefined) updateData.bio_c = updates.bio_c
+      if (updates.profile_picture_c !== undefined) updateData.profile_picture_c = updates.profile_picture_c
+      if (updates.cover_photo_c !== undefined) updateData.cover_photo_c = updates.cover_photo_c
+      if (updates.location_c !== undefined) updateData.location_c = updates.location_c
+      if (updates.friends_count_c !== undefined) updateData.friends_count_c = updates.friends_count_c
+      if (updates.online_c !== undefined) updateData.online_c = updates.online_c
+
+      const response = await apperClient.updateRecord('user_c', {
+        records: [updateData]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to update user")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error updating user:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    users[userIndex] = { ...users[userIndex], ...updates }
-    return { ...users[userIndex] }
   },
 
   async delete(id) {
-    await delay(300)
-    const userIndex = users.findIndex(u => u.Id === parseInt(id))
-    if (userIndex === -1) {
-      throw new Error("User not found")
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.deleteRecord('user_c', {
+        RecordIds: [parseInt(id)]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to delete user")
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error deleting user:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    const deletedUser = users.splice(userIndex, 1)[0]
-    return { ...deletedUser }
   },
 
   async getFriends(userId) {
-    await delay(250)
-    const user = users.find(u => u.Id === parseInt(userId))
-    if (!user) {
-      throw new Error("User not found")
-    }
-    
-    const friends = users.filter(u => user.friends.includes(u.Id.toString()))
-    return friends.map(f => ({ ...f }))
+    // Note: Friend relationships would need a separate junction table in production
+    // For now, returning empty array as friend management requires additional schema
+    return []
   },
 
   async getPendingRequests(userId) {
-    await delay(250)
-    const user = users.find(u => u.Id === parseInt(userId))
-    if (!user) {
-      throw new Error("User not found")
-    }
-    
-    const pendingUsers = users.filter(u => user.pendingRequests.includes(u.Id.toString()))
-    return pendingUsers.map(u => ({ ...u }))
+    // Note: Friend requests would need a separate table in production
+    return []
   },
 
   async sendFriendRequest(fromUserId, toUserId) {
-    await delay(300)
-    const fromUser = users.find(u => u.Id === parseInt(fromUserId))
-    const toUser = users.find(u => u.Id === parseInt(toUserId))
-    
-    if (!fromUser || !toUser) {
-      throw new Error("User not found")
-    }
-    
-    if (!toUser.pendingRequests.includes(fromUserId.toString())) {
-      toUser.pendingRequests.push(fromUserId.toString())
-    }
-    
+    // Note: Friend requests would need a separate table in production
     return true
   },
 
   async acceptFriendRequest(userId, requesterId) {
-    await delay(300)
-    const user = users.find(u => u.Id === parseInt(userId))
-    const requester = users.find(u => u.Id === parseInt(requesterId))
-    
-    if (!user || !requester) {
-      throw new Error("User not found")
-    }
-    
-    // Remove from pending requests
-    user.pendingRequests = user.pendingRequests.filter(id => id !== requesterId.toString())
-    
-    // Add to friends list for both users
-    if (!user.friends.includes(requesterId.toString())) {
-      user.friends.push(requesterId.toString())
-      user.friendsCount = user.friends.length
-    }
-    
-    if (!requester.friends.includes(userId.toString())) {
-      requester.friends.push(userId.toString())
-      requester.friendsCount = requester.friends.length
-    }
-    
+    // Note: Friend requests would need a separate table in production
     return true
   },
 
   async rejectFriendRequest(userId, requesterId) {
-    await delay(300)
-    const user = users.find(u => u.Id === parseInt(userId))
-    
-    if (!user) {
-      throw new Error("User not found")
-    }
-    
-    user.pendingRequests = user.pendingRequests.filter(id => id !== requesterId.toString())
+    // Note: Friend requests would need a separate table in production
     return true
   },
 
   async removeFriend(userId, friendId) {
-    await delay(300)
-    const user = users.find(u => u.Id === parseInt(userId))
-    const friend = users.find(u => u.Id === parseInt(friendId))
-    
-    if (!user || !friend) {
-      throw new Error("User not found")
-    }
-    
-    // Remove from both users' friends lists
-    user.friends = user.friends.filter(id => id !== friendId.toString())
-    user.friendsCount = user.friends.length
-    
-    friend.friends = friend.friends.filter(id => id !== userId.toString())
-    friend.friendsCount = friend.friends.length
-    
+    // Note: Friend relationships would need a separate table in production
     return true
   }
 }

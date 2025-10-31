@@ -1,8 +1,12 @@
-import { Link, useNavigate } from "react-router-dom"
-import { useState } from "react"
-import ApperIcon from "@/components/ApperIcon"
-import Button from "@/components/atoms/Button"
-import SearchInput from "@/components/molecules/SearchInput"
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/layouts/Root";
+import { useSelector } from "react-redux";
+import React, { useState } from "react";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Friends from "@/components/pages/Friends";
+import Profile from "@/components/pages/Profile";
+import SearchInput from "@/components/molecules/SearchInput";
 
 const Header = ({ onMobileMenuClick, onNotificationClick, onChatOpen }) => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -18,11 +22,14 @@ const Header = ({ onMobileMenuClick, onNotificationClick, onChatOpen }) => {
     setShowProfileMenu(!showProfileMenu)
   }
 
-  const currentUser = {
-    id: "1",
-    username: "john_doe",
-    profilePicture: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
-  }
+const { logout } = useAuth()
+  const { user } = useSelector((state) => state.user)
+  
+  const currentUser = user ? {
+    id: user.userId || "1",
+    username: user.firstName || "User",
+    profilePicture: user.profilePicture || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+  } : null
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-surface/95 backdrop-blur-md border-b border-gray-200/50 z-40">
@@ -96,40 +103,49 @@ const Header = ({ onMobileMenuClick, onNotificationClick, onChatOpen }) => {
                 className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition-all duration-150 hover:scale-105"
               >
                 <img
-                  src={currentUser.profilePicture}
-                  alt={currentUser.username}
-                  className="w-8 h-8 rounded-full border-2 border-primary/20"
-                />
-              </button>
+src={currentUser?.profilePicture}
+                alt={currentUser?.username}
+                className="w-8 h-8 rounded-full border-2 border-primary/20"
+              />
+            </button>
 
-              {/* Profile Dropdown */}
-              {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-surface rounded-xl shadow-lg border border-gray-200/50 py-2 z-50">
-                  <Link
-                    to={`/profile/${currentUser.id}`}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <ApperIcon name="User" className="h-4 w-4 mr-3 text-gray-400" />
-                    Your Profile
-                  </Link>
-                  <Link
-                    to="/friends"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <ApperIcon name="Users" className="h-4 w-4 mr-3 text-gray-400" />
-                    Friends
-                  </Link>
-                  <hr className="my-1 border-gray-200" />
-                  <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <ApperIcon name="Settings" className="h-4 w-4 mr-3 text-gray-400" />
-                    Settings
-                  </button>
-                </div>
+{showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200/50 py-2 z-50">
+                <Link
+                  to={`/profile/${currentUser?.id}`}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                  onClick={() => setShowProfileMenu(false)}
+                >
+                  <ApperIcon name="User" className="h-4 w-4 mr-3 text-gray-400" />
+                  Your Profile
+                </Link>
+                <Link
+                  to="/friends"
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                  onClick={() => setShowProfileMenu(false)}
+                >
+                  <ApperIcon name="Users" className="h-4 w-4 mr-3 text-gray-400" />
+                  Friends
+                </Link>
+                <hr className="my-1 border-gray-200" />
+                <button
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                  onClick={() => setShowProfileMenu(false)}
+                >
+                  <ApperIcon name="Settings" className="h-4 w-4 mr-3 text-gray-400" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    logout()
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                >
+                  <ApperIcon name="LogOut" className="h-4 w-4 mr-3" />
+                  Logout
+                </button>
+              </div>
               )}
             </div>
           </div>

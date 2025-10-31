@@ -1,131 +1,226 @@
-import notifications from "@/services/mockData/notifications.json"
-import users from "@/services/mockData/users.json"
-
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+import { getApperClient } from "@/services/apperClient"
+import { useSelector } from "react-redux"
 
 export const notificationService = {
   async getAll() {
-    await delay(300)
-    // Return notifications for current user (ID: 1)
-    const userNotifications = notifications.filter(n => n.userId === "1")
-    
-    // Enhance with actor information
-    const enhancedNotifications = userNotifications.map(notification => {
-      const actor = users.find(u => u.Id === parseInt(notification.actorId))
-      return {
-        ...notification,
-        actor: actor ? {
-          Id: actor.Id,
-          username: actor.username,
-          profilePicture: actor.profilePicture
-        } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('notification_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "message_c" } },
+          { field: { Name: "type_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "target_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } },
+          { field: { Name: "user_id_c" } }
+        ],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "DESC" }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
       }
-    })
-    
-    // Sort by creation date (newest first)
-    return enhancedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+      return (response.data || []).map(notification => ({
+        ...notification,
+        actor: notification.actor_id_c ? {
+          Id: notification.actor_id_c.Id,
+          username_c: notification.actor_id_c.username_c,
+          profile_picture_c: notification.actor_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching notifications:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getById(id) {
-    await delay(200)
-    const notification = notifications.find(n => n.Id === parseInt(id))
-    if (!notification) {
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.getRecordById('notification_c', parseInt(id), {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "message_c" } },
+          { field: { Name: "type_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "target_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } },
+          { field: { Name: "user_id_c" } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Notification not found")
+      }
+
+      const notification = response.data
+      return {
+        ...notification,
+        actor: notification.actor_id_c ? {
+          Id: notification.actor_id_c.Id,
+          username_c: notification.actor_id_c.username_c,
+          profile_picture_c: notification.actor_id_c.profile_picture_c
+        } : null
+      }
+    } catch (error) {
+      console.error(`Error fetching notification ${id}:`, error?.response?.data?.message || error)
       throw new Error("Notification not found")
     }
-    return { ...notification }
   },
 
   async getByUserId(userId) {
-    await delay(250)
-    const userNotifications = notifications.filter(n => n.userId === userId.toString())
-    
-    // Enhance with actor information
-    const enhancedNotifications = userNotifications.map(notification => {
-      const actor = users.find(u => u.Id === parseInt(notification.actorId))
-      return {
-        ...notification,
-        actor: actor ? {
-          Id: actor.Id,
-          username: actor.username,
-          profilePicture: actor.profilePicture
-        } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('notification_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "message_c" } },
+          { field: { Name: "type_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "target_id_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "actor_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } },
+          { field: { Name: "user_id_c" } }
+        ],
+        where: [{ FieldName: "user_id_c", Operator: "EqualTo", Values: [parseInt(userId)] }],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "DESC" }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
       }
-    })
-    
-    // Sort by creation date (newest first)
-    return enhancedNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+      return (response.data || []).map(notification => ({
+        ...notification,
+        actor: notification.actor_id_c ? {
+          Id: notification.actor_id_c.Id,
+          username_c: notification.actor_id_c.username_c,
+          profile_picture_c: notification.actor_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching user notifications:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getUnreadCount(userId) {
-    await delay(150)
-    const userNotifications = notifications.filter(
-      n => n.userId === userId.toString() && !n.read
-    )
-    return userNotifications.length
+    try {
+      const notifications = await this.getByUserId(userId)
+      return notifications.filter(n => !n.read_c).length
+    } catch (error) {
+      console.error("Error getting unread count:", error?.response?.data?.message || error)
+      return 0
+    }
   },
 
   async create(notificationData) {
-    await delay(300)
-    const maxId = Math.max(...notifications.map(n => n.Id))
-    const newNotification = {
-      ...notificationData,
-      Id: maxId + 1,
-      read: false,
-      createdAt: new Date().toISOString()
-    }
-    
-    notifications.unshift(newNotification)
-    
-    // Enhance with actor information
-    const actor = users.find(u => u.Id === parseInt(newNotification.actorId))
-    return {
-      ...newNotification,
-      actor: actor ? {
-        Id: actor.Id,
-        username: actor.username,
-        profilePicture: actor.profilePicture
-      } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.createRecord('notification_c', {
+        records: [{
+          Name: "Notification",
+          message_c: notificationData.message_c,
+          type_c: notificationData.type_c,
+          read_c: false,
+          target_id_c: notificationData.target_id_c || "",
+          actor_id_c: parseInt(notificationData.actor_id_c),
+          user_id_c: parseInt(notificationData.user_id_c)
+        }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to create notification")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error creating notification:", error?.response?.data?.message || error)
+      throw error
     }
   },
 
   async update(id, updates) {
-    await delay(250)
-    const notificationIndex = notifications.findIndex(n => n.Id === parseInt(id))
-    if (notificationIndex === -1) {
-      throw new Error("Notification not found")
+    try {
+      const apperClient = getApperClient()
+      const updateData = { Id: parseInt(id) }
+      
+      if (updates.read_c !== undefined) updateData.read_c = updates.read_c
+      if (updates.message_c !== undefined) updateData.message_c = updates.message_c
+
+      const response = await apperClient.updateRecord('notification_c', {
+        records: [updateData]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to update notification")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error updating notification:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    notifications[notificationIndex] = { ...notifications[notificationIndex], ...updates }
-    return { ...notifications[notificationIndex] }
   },
 
   async delete(id) {
-    await delay(300)
-    const notificationIndex = notifications.findIndex(n => n.Id === parseInt(id))
-    if (notificationIndex === -1) {
-      throw new Error("Notification not found")
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.deleteRecord('notification_c', {
+        RecordIds: [parseInt(id)]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to delete notification")
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error deleting notification:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    const deletedNotification = notifications.splice(notificationIndex, 1)[0]
-    return { ...deletedNotification }
   },
 
   async markAsRead(id) {
-    await delay(200)
-    return this.update(id, { read: true })
+    return this.update(id, { read_c: true })
   },
 
   async markAllAsRead(userId) {
-    await delay(300)
-    const userNotifications = notifications.filter(
-      n => n.userId === userId.toString() && !n.read
-    )
-    
-    userNotifications.forEach(notification => {
-      notification.read = true
-    })
-    
-    return userNotifications.length
+    try {
+      const notifications = await this.getByUserId(userId)
+      const unreadNotifications = notifications.filter(n => !n.read_c)
+
+      for (const notification of unreadNotifications) {
+        await this.update(notification.Id, { read_c: true })
+      }
+
+      return unreadNotifications.length
+    } catch (error) {
+      console.error("Error marking all as read:", error?.response?.data?.message || error)
+      return 0
+    }
   }
 }

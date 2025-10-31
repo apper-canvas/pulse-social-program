@@ -1,159 +1,269 @@
-import messages from "@/services/mockData/messages.json"
-import users from "@/services/mockData/users.json"
-
-// Simulate API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+import { getApperClient } from "@/services/apperClient"
 
 export const messageService = {
   async getAll() {
-    await delay(300)
-    return [...messages]
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('message_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "conversation_id_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
+      }
+
+      return (response.data || []).map(message => ({
+        ...message,
+        sender: message.sender_id_c ? {
+          Id: message.sender_id_c.Id,
+          username_c: message.sender_id_c.username_c,
+          profile_picture_c: message.sender_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching messages:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getById(id) {
-    await delay(200)
-    const message = messages.find(m => m.Id === parseInt(id))
-    if (!message) {
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.getRecordById('message_c', parseInt(id), {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "conversation_id_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Message not found")
+      }
+
+      const message = response.data
+      return {
+        ...message,
+        sender: message.sender_id_c ? {
+          Id: message.sender_id_c.Id,
+          username_c: message.sender_id_c.username_c,
+          profile_picture_c: message.sender_id_c.profile_picture_c
+        } : null
+      }
+    } catch (error) {
+      console.error(`Error fetching message ${id}:`, error?.response?.data?.message || error)
       throw new Error("Message not found")
     }
-    return { ...message }
   },
 
   async getByConversationId(conversationId) {
-    await delay(250)
-    const conversationMessages = messages.filter(m => m.conversationId === conversationId)
-    
-    // Enhance with sender information
-    const enhancedMessages = conversationMessages.map(message => {
-      const sender = users.find(u => u.Id === parseInt(message.senderId))
-      return {
-        ...message,
-        sender: sender ? {
-          Id: sender.Id,
-          username: sender.username,
-          profilePicture: sender.profilePicture
-        } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('message_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "conversation_id_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ],
+        where: [{ FieldName: "conversation_id_c", Operator: "EqualTo", Values: [conversationId] }],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "ASC" }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
       }
-    })
-    
-    // Sort by creation date (oldest first)
-    return enhancedMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+
+      return (response.data || []).map(message => ({
+        ...message,
+        sender: message.sender_id_c ? {
+          Id: message.sender_id_c.Id,
+          username_c: message.sender_id_c.username_c,
+          profile_picture_c: message.sender_id_c.profile_picture_c
+        } : null
+      }))
+    } catch (error) {
+      console.error("Error fetching conversation messages:", error?.response?.data?.message || error)
+      return []
+    }
   },
 
   async getConversations(userId) {
-    await delay(350)
-    const userIdStr = userId.toString()
-    
-    // Group messages by conversation
-    const conversationMap = new Map()
-    
-    messages.forEach(message => {
-      const conversationId = message.conversationId
-      const participants = conversationId.split("-")
-      
-      // Only include conversations where user is a participant
-      if (participants.includes(userIdStr)) {
-        if (!conversationMap.has(conversationId)) {
-          conversationMap.set(conversationId, [])
-        }
-        conversationMap.get(conversationId).push(message)
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.fetchRecords('message_c', {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "content_c" } },
+          { field: { Name: "conversation_id_c" } },
+          { field: { Name: "read_c" } },
+          { field: { Name: "CreatedOn" } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "username_c" } } },
+          { field: { Name: "sender_id_c" }, referenceField: { field: { Name: "profile_picture_c" } } }
+        ],
+        orderBy: [{ fieldName: "CreatedOn", sorttype: "DESC" }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        return []
       }
-    })
-    
-    // Create conversation objects with metadata
-    const conversations = []
-    
-    for (const [conversationId, msgs] of conversationMap) {
-      const participants = conversationId.split("-")
-      const otherUserId = participants.find(id => id !== userIdStr)
-      const otherUser = users.find(u => u.Id === parseInt(otherUserId))
-      
-      if (otherUser) {
-        const lastMessage = msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
-        const unreadCount = msgs.filter(m => m.senderId !== userIdStr && !m.read).length
-        
+
+      const messages = response.data || []
+      const userIdStr = userId.toString()
+      const conversationMap = new Map()
+
+      messages.forEach(message => {
+        const conversationId = message.conversation_id_c
+        const participants = conversationId.split("-")
+
+        if (participants.includes(userIdStr)) {
+          if (!conversationMap.has(conversationId)) {
+            conversationMap.set(conversationId, [])
+          }
+          conversationMap.get(conversationId).push(message)
+        }
+      })
+
+      const conversations = []
+      for (const [conversationId, msgs] of conversationMap) {
+        const lastMessage = msgs[0]
+        const unreadCount = msgs.filter(m => 
+          m.sender_id_c?.Id?.toString() !== userIdStr && !m.read_c
+        ).length
+
         conversations.push({
           Id: conversationId,
           conversationId,
-          otherUser: {
-            Id: otherUser.Id,
-            username: otherUser.username,
-            profilePicture: otherUser.profilePicture,
-            online: otherUser.online
-          },
           lastMessage,
           unreadCount,
-          updatedAt: lastMessage.createdAt
+          updatedAt: lastMessage.CreatedOn
         })
       }
+
+      return conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    } catch (error) {
+      console.error("Error fetching conversations:", error?.response?.data?.message || error)
+      return []
     }
-    
-    // Sort by last message date (newest first)
-    return conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
   },
 
   async create(messageData) {
-    await delay(300)
-    const maxId = Math.max(...messages.map(m => m.Id))
-    const newMessage = {
-      ...messageData,
-      Id: maxId + 1,
-      read: false,
-      createdAt: new Date().toISOString()
-    }
-    
-    messages.push(newMessage)
-    
-    // Enhance with sender information
-    const sender = users.find(u => u.Id === parseInt(newMessage.senderId))
-    return {
-      ...newMessage,
-      sender: sender ? {
-        Id: sender.Id,
-        username: sender.username,
-        profilePicture: sender.profilePicture
-      } : null
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.createRecord('message_c', {
+        records: [{
+          Name: "Message",
+          content_c: messageData.content_c,
+          sender_id_c: parseInt(messageData.sender_id_c),
+          conversation_id_c: messageData.conversation_id_c,
+          read_c: false
+        }]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to create message")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error creating message:", error?.response?.data?.message || error)
+      throw error
     }
   },
 
   async update(id, updates) {
-    await delay(250)
-    const messageIndex = messages.findIndex(m => m.Id === parseInt(id))
-    if (messageIndex === -1) {
-      throw new Error("Message not found")
+    try {
+      const apperClient = getApperClient()
+      const updateData = { Id: parseInt(id) }
+      
+      if (updates.read_c !== undefined) updateData.read_c = updates.read_c
+      if (updates.content_c !== undefined) updateData.content_c = updates.content_c
+
+      const response = await apperClient.updateRecord('message_c', {
+        records: [updateData]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to update message")
+      }
+
+      if (response.results && response.results.length > 0) {
+        const successful = response.results.filter(r => r.success)
+        return successful[0]?.data || null
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error updating message:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    messages[messageIndex] = { ...messages[messageIndex], ...updates }
-    return { ...messages[messageIndex] }
   },
 
   async delete(id) {
-    await delay(300)
-    const messageIndex = messages.findIndex(m => m.Id === parseInt(id))
-    if (messageIndex === -1) {
-      throw new Error("Message not found")
+    try {
+      const apperClient = getApperClient()
+      const response = await apperClient.deleteRecord('message_c', {
+        RecordIds: [parseInt(id)]
+      })
+
+      if (!response.success) {
+        console.error(response.message)
+        throw new Error("Failed to delete message")
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error deleting message:", error?.response?.data?.message || error)
+      throw error
     }
-    
-    const deletedMessage = messages.splice(messageIndex, 1)[0]
-    return { ...deletedMessage }
   },
 
   async markAsRead(id) {
-    await delay(200)
-    return this.update(id, { read: true })
+    return this.update(id, { read_c: true })
   },
 
   async markConversationAsRead(conversationId, userId) {
-    await delay(250)
-    const userIdStr = userId.toString()
-    const conversationMessages = messages.filter(
-      m => m.conversationId === conversationId && m.senderId !== userIdStr && !m.read
-    )
-    
-    conversationMessages.forEach(message => {
-      message.read = true
-    })
-    
-    return conversationMessages.length
+    try {
+      const messages = await this.getByConversationId(conversationId)
+      const userIdStr = userId.toString()
+      const unreadMessages = messages.filter(
+        m => m.sender_id_c?.Id?.toString() !== userIdStr && !m.read_c
+      )
+
+      for (const message of unreadMessages) {
+        await this.update(message.Id, { read_c: true })
+      }
+
+      return unreadMessages.length
+    } catch (error) {
+      console.error("Error marking conversation as read:", error?.response?.data?.message || error)
+      return 0
+    }
   }
 }
