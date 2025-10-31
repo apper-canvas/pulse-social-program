@@ -8,15 +8,20 @@ import Button from "@/components/atoms/Button"
 
 const PostCard = ({ post, onLike, onComment, className }) => {
 // Parse likes from string to array (likes_c is MultilineText in database)
-  const parsedLikes = (() => {
+const parsedLikes = (() => {
     if (!post.likes) return [];
     if (Array.isArray(post.likes)) return post.likes;
     try {
       // Try parsing as JSON array
-      return JSON.parse(post.likes);
+      const parsed = JSON.parse(post.likes);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       // Fallback to comma-separated string
-      return post.likes.split(',').map(id => id.trim()).filter(Boolean);
+      if (typeof post.likes === 'string') {
+        return post.likes.split(',').map(id => id.trim()).filter(Boolean);
+      }
+      // Final fallback for any unexpected type
+      return [];
     }
   })();
   const [isLiked, setIsLiked] = useState(parsedLikes.includes("1")) // Current user ID is "1"
@@ -122,7 +127,7 @@ const [likesCount, setLikesCount] = useState(parsedLikes.length)
               )}
             >
               <ApperIcon
-                name={isLiked ? "Heart" : "Heart"}
+name="Heart"
                 className={cn(
                   "h-5 w-5 transition-all duration-200",
                   isLiked ? "fill-current heart-pop" : ""
