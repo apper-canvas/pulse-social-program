@@ -12,11 +12,11 @@ const ConversationCard = ({ conversation, isActive, onClick, className }) => {
         className
       )}
     >
-      <Avatar
-        src={conversation.otherUser.profilePicture}
-        alt={conversation.otherUser.username}
+<Avatar
+        src={conversation.otherUser?.profilePicture || ""}
+        alt={conversation.otherUser?.username || "Unknown User"}
         size="md"
-        online={conversation.otherUser.online}
+        online={conversation.otherUser?.online || false}
       />
       
       <div className="flex-1 min-w-0">
@@ -25,10 +25,10 @@ const ConversationCard = ({ conversation, isActive, onClick, className }) => {
             "font-semibold truncate",
             conversation.unreadCount > 0 ? "text-gray-900" : "text-gray-800"
           )}>
-            {conversation.otherUser.username}
+{conversation.otherUser?.username || "Unknown User"}
           </h3>
           <span className="text-xs text-gray-500">
-            {formatDistanceToNow(new Date(conversation.lastMessage.createdAt), { addSuffix: true })}
+            {formatDistanceToNow(new Date(conversation.lastMessage?.createdAt || Date.now()), { addSuffix: true })}
           </span>
         </div>
         
@@ -37,8 +37,8 @@ const ConversationCard = ({ conversation, isActive, onClick, className }) => {
             "text-sm truncate",
             conversation.unreadCount > 0 ? "font-medium text-gray-900" : "text-gray-600"
           )}>
-            {conversation.lastMessage.senderId === "1" && "You: "}
-            {conversation.lastMessage.content}
+{conversation.lastMessage?.senderId === "1" && "You: "}
+            {conversation.lastMessage?.content || "No message"}
           </p>
           
           {conversation.unreadCount > 0 && (
